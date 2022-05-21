@@ -10,10 +10,11 @@ import MapKit
 
 struct ContentView: View {
     
-    @StateObject private var vm = ViewModel()
+    // MARK: - PROPERTIES
+    @StateObject private var vm = ContentViewModel()
     
+    // MARK: - BODY
     var body: some View {
-        
         ZStack {
             if vm.isUnlocked {
                 Map(coordinateRegion: $vm.mapRegion, annotationItems: vm.locations) { location in
@@ -48,14 +49,17 @@ struct ContentView: View {
                             vm.addLocation()
                         } label: {
                             Image(systemName: "plus")
+                                .padding()
+                                .background(.black.opacity(0.75))
+                                .foregroundColor(.white)
+                                .font(.title)
+                                .clipShape(Circle())
+                                .padding(.trailing)
                         }
-                        .padding()
-                        .background(.black.opacity(0.75))
-                        .foregroundColor(.white)
-                        .font(.title)
-                        .clipShape(Circle())
-                        .padding(.trailing)
                     }
+                }
+                .sheet(item: $vm.selectedPlace) { place in
+                    EditView(location: place) { vm.update(location: $0) }
                 }
             } else {
                 Button("Unlock Places") {
@@ -65,14 +69,15 @@ struct ContentView: View {
                 .background(.blue)
                 .foregroundColor(.white)
                 .clipShape(Capsule())
+                .alert(isPresented: $vm.showingAlert) {
+                    Alert(title: Text("\(vm.alertTitle)"), message: Text("\(vm.alertMessage)"))
+                }
             }
-        }
-        .sheet(item: $vm.selectedPlace) { place in
-            EditView(location: place) { vm.update(location: $0) }
         }
     }
 }
 
+// MARK: - PREVIEW
 struct ContentView_Previews: PreviewProvider {
     static var previews: some View {
         ContentView()

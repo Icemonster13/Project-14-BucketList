@@ -5,19 +5,26 @@
 //  Created by Michael & Diana Pascucci on 5/20/22.
 //
 
-import Foundation
+import SwiftUI
 import MapKit
 import LocalAuthentication
 
 extension ContentView {
-    final class ViewModel: ObservableObject {
+    final class ContentViewModel: ObservableObject {
+        
+        // MARK: - PROPERTIES
         @Published var mapRegion = MKCoordinateRegion(center: CLLocationCoordinate2D(latitude: 50, longitude: 0), span: MKCoordinateSpan(latitudeDelta: 25, longitudeDelta: 25))
         @Published private(set) var locations: [Location]
         @Published var selectedPlace: Location?
         @Published var isUnlocked = false
         
+        @Published var showingAlert = false
+        @Published var alertTitle = ""
+        @Published var alertMessage = ""
+        
         let savePath = FileManager.documentsDirectory.appendingPathComponent("SavedPlaces")
         
+        // MARK: - INITIALIZER
         init() {
             do {
                 let data = try Data(contentsOf: savePath)
@@ -27,6 +34,7 @@ extension ContentView {
             }
         }
         
+        // MARK: - METHODS
         func addLocation() {
             let newLocation = Location(id: UUID(), name: "New Location", description: "", latitude: mapRegion.center.latitude, longitude: mapRegion.center.longitude)
             locations.append(newLocation)
@@ -60,14 +68,20 @@ extension ContentView {
                 
                 context.evaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, localizedReason: reason) { success, authenticateError in
                     
-                    if success {
-                        Task { @MainActor in self.isUnlocked = true }
-                    } else {
-                        // error
+                    Task { @MainActor in
+                        if success {
+                            Task { @MainActor in self.isUnlocked = true }
+                        } else {
+                            self.alertTitle = "Failed to authenticate"
+                            self.alertMessage = "Your BuketList was not unlocked!"
+                            self.showingAlert = true
+                        }
                     }
                 }
             } else {
-                // no biometrics
+                self.alertTitle = "Biometrics are not available"
+                self.alertMessage = "You will have to authenticate another way!"
+                self.showingAlert = true
             }
         }
     }
